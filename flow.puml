@@ -1,0 +1,41 @@
+@startuml
+!theme plain
+
+title 架构设计
+
+
+rectangle "多个副本" as replicas #lightgreen
+
+' 顶部锁机制
+circle "锁\n(redsync)" as lock #orchid
+replicas --> lock : 循环抢锁
+lock --> replicas : 抢到锁的副本可执行任务调度
+
+' 主体框架
+rectangle "Flow" {
+  rectangle "cron" as cron #lightyellow {
+    rectangle "任务注册" as reg
+    rectangle "任务调度" as schedule
+    rectangle "任务执行" as exec
+  }
+
+  rectangle "配置管理" as config #pink
+  rectangle "task" as task #lightblue
+}
+
+rectangle "MariaDB task" as mariadb #lightsteelblue
+rectangle "K8s Job" as k8s #lavender
+
+' 内部流程
+lock --> schedule : 授权执行任务调度
+reg --> schedule
+schedule --> exec : 执行任务
+config --> task : 传递必要配置
+reg --> task : 注册
+exec --> task : 执行
+
+' 外部交互
+task --> mariadb : 创建\n状态同步
+mariadb <--> k8s : 状态同步
+
+@enduml
