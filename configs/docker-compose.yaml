@@ -7,7 +7,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: 'system-watch'
     volumes:
-      - system_watch_mariadb_data:/var/lib/mysql  # 数据库数据持久化存储
+      - $HOME/data/system-watch/mariadb:/var/lib/mysql  # 数据库数据持久化存储
     ports:
       - "33306:3306"  # 暴露 MariaDB 端口
     restart: unless-stopped  # 确保容器失败时重新启动
@@ -31,22 +31,13 @@ services:
       "--protected-mode", "no"  # 禁用受保护模式（注意安全性）
     ]
     volumes:
-      - system_watch_redis_data:/data
+      - $HOME/data/system-watch/redis:/data
     ports:
       - "36379:6379"  # 暴露 Redis 端口
     restart: unless-stopped  # 确保容器失败时重新启动
     networks:
       - system-watch  # 加入 system-watch 网络
     user: "1001"  # bitnami 镜像默认用户（重要！）
-
-# 定义持久化存储的卷
-# 查看持久卷 docker volume ls
-# 删除指定持久卷 docker volume rm xxx
-# 删除未使用持久卷 docker volume prune
-volumes:
-  system_watch_mariadb_data:
-    driver: local
-  system_watch_redis_data:
 
 # 定义网络
 networks:

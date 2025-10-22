@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/spf13/pflag"
 	"gorm.io/gorm"
@@ -42,7 +42,7 @@ func main() {
 
 	dbInstance, err := initializeDatabase()
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		slog.Error("Failed to connect to database", "err", err)
 	}
 
 	modelPkgPath := resolveModelPackagePath(generateConfig.ModelPackagePath)

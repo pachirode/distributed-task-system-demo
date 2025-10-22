@@ -2,7 +2,7 @@ package main
 
 import (
 	"gorm.io/gen/field"
-	"log"
+	"log/slog"
 	"path/filepath"
 	"runtime"
 
@@ -52,14 +52,14 @@ func GenerateSystemWatchModels(g *gen.Generator) {
 func rootDir() string {
 	_, file, _, ok := runtime.Caller(0)
 	if !ok {
-		log.Fatalf("Error retrieving file info")
+		slog.Error("Error retrieving file info")
 	}
 
 	dir := filepath.Dir(file)
 
 	absPath, err := filepath.Abs(dir + "../../../")
 	if err != nil {
-		log.Fatalf("Error getting absolute directory path: %v", dir)
+		slog.Error("Error getting absolute directory path", "path", dir)
 	}
 
 	return absPath

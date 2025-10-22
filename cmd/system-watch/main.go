@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"log"
+	"log/slog"
 	"path/filepath"
 	"time"
 
@@ -17,6 +17,7 @@ import (
 
 func main() {
 	var kubecfg *string
+	slog.SetLogLoggerLevel(slog.LevelDebug)
 	if home := homedir.HomeDir(); home != "" {
 		kubecfg = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "Optional absolute path to kubeconfig")
 	} else {
@@ -25,7 +26,7 @@ func main() {
 
 	config, err := clientcmd.BuildConfigFromFlags("", *kubecfg)
 	if err != nil {
-		log.Fatalf("%v", err)
+		slog.Error("Error to build flags", "error", err)
 		return
 	}
 
@@ -33,7 +34,7 @@ func main() {
 	config.Burst = 100
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		log.Fatalf("%v", err)
+		slog.Error("Error to create clientset", "error", err)
 		return
 	}
 
@@ -64,7 +65,7 @@ func main() {
 
 	sw, err := cfg.New()
 	if err != nil {
-		log.Fatalf("%v", err)
+		slog.Error("Error to create system watch", "error", err)
 		return
 	}
 

@@ -2,7 +2,7 @@ package system_watch
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
@@ -23,7 +23,7 @@ type systemWatch struct {
 func (c *SystemWatchConfig) New() (*systemWatch, error) {
 	rdb, err := db.NewRedis(c.RedisOptions)
 	if err != nil {
-		log.Fatalf("Error to create redis client: %v", err)
+		slog.Error("Error to create redis client", "err", err)
 	}
 
 	runner := cron.New(cron.WithSeconds(), cron.WithLogger(cron.DefaultLogger), cron.WithChain(
@@ -56,7 +56,7 @@ func (c *SystemWatchConfig) New() (*systemWatch, error) {
 func (sw *systemWatch) addWatchers() error {
 	for s, w := range biz.ListWatchers() {
 		if err := w.Init(context.Background(), sw.config); err != nil {
-			log.Fatalf("Error to construct watcher %V: %v", s, err)
+			slog.Error("Error to construct watcher", "struct name", s, "err", err)
 			return err
 		}
 
@@ -66,7 +66,7 @@ func (sw *systemWatch) addWatchers() error {
 		}
 
 		if _, err := sw.runner.AddJob(spec, w); err != nil {
-			log.Fatalf("Error to add job to the cron %v: %v", s, err)
+			slog.Error("Error to add job to the cron", "struct name", s, "err", err)
 			return err
 		}
 	}
@@ -84,7 +84,7 @@ func (sw *systemWatch) Run(stopCh <-chan struct{}) {
 	for {
 		err := sw.locker.LockContext(ctx)
 		if err == nil {
-			log.Printf("Successfully acquire lock: %v", lockName)
+			slog.Info("Successfully acquire lock", "lockName", lockName)
 			break
 		}
 		<-ticker.C
@@ -98,13 +98,13 @@ func (sw *systemWatch) Run(stopCh <-chan struct{}) {
 		for {
 			<-ticker.C
 			if ok, err := sw.locker.ExtendContext(ctx); !ok || err != nil {
-				log.Fatalf("Error to extend lock: %v", err)
+				slog.Error("Error to extend lock", "err", err)
 			}
 		}
 	}()
 
 	sw.runner.Start()
-	log.Printf("Started system-watch")
+	slog.Info("Started system-watch")
 
 	<-stopCh
 
@@ -116,10 +116,10 @@ func (sw *systemWatch) Stop() {
 	select {
 	case <-ctx.Done():
 	case <-time.After(jobStopTimeout):
-		log.Fatalf("Context was not done, timeout: %v", jobStopTimeout.String())
+		slog.Error("Context was not done", "timeout", jobStopTimeout.String())
 	}
 
 	if ok, err := sw.locker.Unlock(); !ok || err != nil {
-		log.Fatalf("Error to unlock")
+		slog.Error("Error to unlock", "err", err)
 	}
 }

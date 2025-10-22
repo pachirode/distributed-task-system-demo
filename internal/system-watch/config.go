@@ -1,7 +1,7 @@
 package system_watch
 
 import (
-	"log"
+	"log/slog"
 	"time"
 
 	"k8s.io/client-go/kubernetes"
@@ -31,7 +31,7 @@ type SystemWatchConfig struct {
 func (c *SystemWatchConfig) NewSystemWatchConfig() (*biz.Config, error) {
 	gormDB, err := db.NewMySQL(c.MySQLOptions)
 	if err != nil {
-		log.Fatalf("Error to create mysql client: %v", err)
+		slog.Error("Error to create mysql client", "err", err)
 		return nil, err
 	}
 
