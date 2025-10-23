@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log/slog"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	genericapiserver "k8s.io/apiserver/pkg/server"
@@ -16,6 +17,7 @@ import (
 )
 
 func main() {
+	runtime.GOMAXPROCS(0)
 	var kubecfg *string
 	slog.SetLogLoggerLevel(slog.LevelDebug)
 	if home := homedir.HomeDir(); home != "" {

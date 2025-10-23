@@ -33,7 +33,7 @@ func (w *taskWatcher) Spec() string {
 }
 
 func (w *taskWatcher) Run() {
-	w.wg.Add(2)
+	w.wg.Add(1)
 	slog.Info("Task watcher start run")
 
 	go func() {
@@ -66,43 +66,22 @@ func (w *taskWatcher) Run() {
 					return
 				}
 				slog.Info("Successfully created job", "namespace", job.Namespace, "name", job.Name)
-			}(task)
-		}
-		wg.Wait()
-	}()
 
-	// 同步状态
-	go func() {
-		defer w.wg.Done()
-		ctx := context.Background()
+				go func(task *model.TaskM) {
+					job, err := w.clientset.BatchV1().Jobs(task.Namespace).Get(ctx, task.Name, metav1.GetOptions{})
+					if err != nil {
+						slog.Error("Error to get task", "err", err)
+						return
+					}
 
-		_, tasks, err := w.store.Tasks().List(ctx, meta.WithFilterNot(map[string]any{
-			"status": []string{model.TaskStatusNormal, model.TaskStatusSucceeded, model.TaskStatusFailed},
-		}))
+					task.Status = toTaskStatus(job)
+					if err := w.store.Tasks().Update(ctx, task); err != nil {
+						slog.Error("Error to update task status")
+						return
+					}
 
-		if err != nil {
-			slog.Error("Error to list tasks", "err", err)
-			return
-		}
-
-		var wg sync.WaitGroup
-		wg.Add(len(tasks))
-		for _, task := range tasks {
-			go func(task *model.TaskM) {
-				defer wg.Done()
-				job, err := w.clientset.BatchV1().Jobs(task.Namespace).Get(ctx, task.Name, metav1.GetOptions{})
-				if err != nil {
-					slog.Error("Error to get task", "err", err)
-					return
-				}
-
-				task.Status = toTaskStatus(job)
-				if err := w.store.Tasks().Update(ctx, task); err != nil {
-					slog.Error("Error to update task status")
-					return
-				}
-
-				slog.Info("Successfully update job status", "namespace", job.Namespace, "name", job.Name)
+					slog.Info("Successfully update job status", "namespace", job.Namespace, "name", job.Name)
+				}(task)
 			}(task)
 		}
 		wg.Wait()
