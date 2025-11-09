@@ -1,6 +1,7 @@
 version: "3"
 
 services:
+  # ======================= system-watch
   mariadb:
     image: mariadb:12.0
     container_name: system-watch-mariadb
@@ -38,7 +39,6 @@ services:
     networks:
       - system-watch  # 加入 system-watch 网络
     user: "1001"  # bitnami 镜像默认用户（重要！）
-
 # 定义网络
 networks:
   system-watch:
